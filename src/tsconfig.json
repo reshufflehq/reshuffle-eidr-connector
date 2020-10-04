@@ -1,0 +1,23 @@
+{
+  "target": "es7",
+  "compilerOptions": {
+    "module": "commonjs",
+    "lib": [
+      "dom",
+      "es2019",
+      "esnext.bigint"
+    ],
+    "allowJs": true,
+    "outDir": "../dist",
+    "rootDir": ".",
+    "strict": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "declaration": true
+
+  },
+  "include": [".eslintrc.js", "**/*.ts", "**/*.d.ts"],
+  "typeRoots": ["./custom.d.ts", "./node_modules/@types", "../node_modules/@types"]
+}
