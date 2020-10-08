@@ -128,7 +128,7 @@ export class EIDRConnector extends BaseConnector {
         throw new EIDRError(
           'Invalid ${opt}',
           500,
-          `Invalid ${opt}: ${options[opt]}`
+          `Invalid ${opt}: ${options[opt]}`,
         )
       }
       return options[opt]
@@ -201,7 +201,7 @@ export class EIDRConnector extends BaseConnector {
         'API error',
         res.status,
         `HTTP error accessing EIDR registry API: ${
-          res.status} ${res.statusText}`
+          res.status} ${res.statusText}`,
       )
     }
 
@@ -225,7 +225,7 @@ export class EIDRConnector extends BaseConnector {
         'API error',
         res.status,
         `HTTP error accessing EIDR registry API: ${
-          res.status} ${res.statusText}`
+          res.status} ${res.statusText}`,
       )
     }
 
@@ -249,7 +249,7 @@ export class EIDRConnector extends BaseConnector {
       throw new EIDRError(
         'Invalid query',
         500,
-        `Query must be a string or an object: ${typeof exprOrObj}`
+        `Query must be a string or an object: ${typeof exprOrObj}`,
       )
     }
     const req = this.renderQueryRequest(expr, options)
@@ -281,15 +281,33 @@ export class EIDRConnector extends BaseConnector {
   }
 
   public async resolve(id: string, type = 'Full') {
+    if (id.startsWith('10.5240')) {
+      return this.resolveContentID(id, type)
+    }
+    if (id.startsWith('10.5239') || id.startsWith('10.5237')) {
+      return this.resolveOtherID(id, type)
+    }
+    throw new EIDRError(
+      'Unsupported type',
+      500,
+      `Unsupported record type: ${id.substring(0, 7)}`,
+    )
+  }
+
+  private async resolveContentID(id: string, type = 'Full') {
     if (
+      type !== 'AlternateIDs' &&
+      type !== 'DOIKernel' &&
       type !== 'Full' &&
+      type !== 'LinkedAlternateIDs' &&
+      type !== 'Provenance' &&
       type !== 'SelfDefined' &&
-      type !== 'LinkedAlternateIDs'
+      type !== 'Simple'
     ) {
       throw new EIDRError(
         'Unsupported type',
         500,
-        `Unsupported resolution type: ${type}`
+        `Unsupported resolution type: ${type}`,
       )
     }
 
@@ -320,20 +338,73 @@ export class EIDRConnector extends BaseConnector {
         ...res[attr].BaseObjectData,
         ExtraObjectMetadata: res[attr].ExtraObjectMetadata,
       }
+    }
 
-    } else { // type === LinkedAlternateIDs
-      if (
-        !res.LinkedAlternateIDs ||
-        !res.LinkedAlternateIDs.LinkedAlternateID
-      ) {
+    if (type === 'AlternateIDs' || type === 'LinkedAlternateIDs') {
+      const prop = type.slice(0, -1)
+      if (!res[type] || !res[type][prop]) {
         throw new EIDRError(
           'Unrecognized response',
           500,
           `Unrecognized response resolving: id=${id} type=${type}`,
         )
       }
-      return res.LinkedAlternateIDs.LinkedAlternateID
+      return {
+        ID: res[type].ID,
+        [prop]: res[type][prop],
+      }
     }
+
+    // type === 'Simple'|| type === 'Provenance' || type === 'DOIKernel'
+    const attr = `${type === 'DOIKernel' ? 'kernel' : type}Metadata`
+    if (!res[attr]) {
+      throw new EIDRError(
+        'Unrecognized response',
+        500,
+        `Unrecognized response resolving: id=${id} type=${type}`,
+      )
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-shadow
+    const { $, ...response } = res[attr]
+    return response
+  }
+
+  private async resolveOtherID(id: string, type = 'Full') {
+    if (type !== 'Full' && type !== 'DOIKernel') {
+      throw new EIDRError(
+        'Unsupported type',
+        500,
+        `Unsupported resolution type: ${type}`,
+      )
+    }
+
+    const prefix = id.startsWith('10.5237') ? 'party' : 'service'
+    const pth = `${prefix}/resolve/${encodeURIComponent(id)}?type=${type}`
+    const res = await this.getRequest(pth)
+
+    if (res.Response &&
+        res.Response.Status &&
+        res.Response.Status.Code !== '0') {
+      throw new EIDRError(
+        `Error ${res.Response.Status.Code} ${res.Response.Status.Type}`,
+        500,
+        res.Response.Status.Type,
+      )
+    }
+
+    const which = id.startsWith('10.5237') ? 'Party' : 'Service'
+    const payload = res && res[type === 'Full' ? which : 'kernelMetadata']
+    if (!payload) {
+      throw new EIDRError(
+        'Unrecognized response',
+        500,
+        `Unrecognized response resolving: id=${id} type=${type}`,
+      )
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-shadow
+    const { $, ...response } = payload
+    return response
   }
 
   public async simpleQuery(
