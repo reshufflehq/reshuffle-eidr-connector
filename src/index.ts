@@ -144,7 +144,7 @@ export class EIDRConnector extends BaseConnector {
       userId = '10.5238/reshuffle-api'
       partyId = '10.5237/717F-CB6A'
       shadow = 'IRRrGhXH+DrDYBs82EBzzQ=='
-      domain = 'registry1.eidr.org'
+      domain = 'resolve.eidr.org'
     }
 
     this.endpoint = `https://${domain}/EIDR/`
