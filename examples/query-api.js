@@ -6,17 +6,17 @@ const eidr = new EIDRConnector(app)
 const http = new HttpConnector(app)
 
 http.on({ method: 'GET', path: '/query' }, async (event) => {
-  const name = (event.context.req.query.name || '').trim()
+  const name = (event.req.query.name || '').trim()
   if (name.length === 0) {
-    return event.context.res.status(400).send('Missing name')
+    return event.res.status(400).send('Missing name')
   }
 
   try {
     const { results } = await eidr.query({ name })
-    return event.context.res.json(results)
+    return event.res.json(results)
 
   } catch (e) {
-    return event.context.res.status(e.status).json({
+    return event.res.status(e.status).json({
       error: e.message,
       details: e.details,
     })
