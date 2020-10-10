@@ -203,7 +203,6 @@ query objects.
 
 The optional `options` object supports the following optional fields:
 
-* `encoding?: string` - Query character encoding (default if ASCII)
 * `pageNumber?: number` - Results page number (default is 1)
 * `pageSize?: number` - Results page size (default is 25)
 * `root?: string` - EIDR ID for rooted queries

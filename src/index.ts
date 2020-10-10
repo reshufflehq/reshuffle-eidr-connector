@@ -7,7 +7,6 @@ type Obj = Record<string, any>
 type Options = Record<string, any>
 
 interface QueryOptions {
-  encoding?: string
   pageNumber?: number
   pageSize?: number
   root?: string
@@ -170,7 +169,7 @@ export class EIDRConnector extends BaseConnector {
     return this.renderOperationRequest(`
       <Query>
         ${opts.root ? `<ID>${opts.root}</ID>` : ''}
-        <Expression><![CDATA[${opts.encoding || 'ASCII'}${query}]]></Expression>
+        <Expression><![CDATA[${query}]]></Expression>
         <PageNumber>${opts.pageNumber || 1}</PageNumber>
         <PageSize>${opts.pageSize || 25}</PageSize>
       </Query>
