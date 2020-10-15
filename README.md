@@ -8,7 +8,7 @@
 
 ### Reshuffle EIDR Connector
 
-This package contains a [Resshufle](https://github.com/reshufflehq/reshuffle)
+This package contains a [Reshuffle](https://dev.reshuffle.com)
 connector to the Entertainment Identifier Registry (EIDR) service
 at [eidr.org](https://eidr.org/).
 
