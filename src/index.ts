@@ -341,7 +341,7 @@ export class EIDRConnector extends BaseConnector {
 
     if (type === 'AlternateIDs' || type === 'LinkedAlternateIDs') {
       const prop = type.slice(0, -1)
-      if (!res[type] || !res[type][prop]) {
+      if (!res[type]) {
         throw new EIDRError(
           'Unrecognized response',
           500,
@@ -350,7 +350,7 @@ export class EIDRConnector extends BaseConnector {
       }
       return {
         ID: res[type].ID,
-        [prop]: res[type][prop],
+        [prop]: res[type][prop] || [],
       }
     }
 
