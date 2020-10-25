@@ -1,7 +1,7 @@
 const { Reshuffle } = require('reshuffle')
 const { EIDRConnector } = require('reshuffle-eidr-connector')
 
-async function main() {
+;(async () => {
   const app = new Reshuffle()
   const eidr = new EIDRConnector(app)
 
@@ -56,6 +56,5 @@ async function main() {
       console.log()
     }
   }
-}
 
-main()
+})().catch(console.error)

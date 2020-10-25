@@ -21,7 +21,8 @@ class EIDRError extends Error {
 const logical: Obj = {
 
   and: function and(...expressions: string[]) {
-    return `(${expressions.map((x) => `(${x})`).join(' AND ')})`
+    const many = 1 < expressions.length
+    return `${many ? '(' : ''}${expressions.join(' AND ')}${many ? ')' : ''}`
   },
 
   eq: function eq(field: string, value: string) {
@@ -40,8 +41,13 @@ const logical: Obj = {
     return `(/FullMetadata/ExtraObjectMetadata/${field} EXISTS)`
   },
 
+  not: function not(expression: string) {
+    return `(NOT ${expression})`
+  },
+
   or: function or(...expressions: string[]) {
-    return `(${expressions.map((x) => `(${x})`).join(' OR ')})`
+    const many = 1 < expressions.length
+    return `${many ? '(' : ''}${expressions.join(' OR ')}${many ? ')' : ''}`
   },
 }
 
@@ -88,19 +94,27 @@ const semantic: Obj = {
 }
 
 function $(obj: Obj): string {
-  return Array.isArray(obj) ? logical.or(...obj.map($)) :
-    logical.and(...Object.entries(obj).map(([key, value]) => {
-      if (key === '$') {
-        return $(value)
+  return logical.and(...Object.entries(obj).map(([key, value]) => {
+    if (key === 'and' || key === 'or') {
+      if (!Array.isArray(value)) {
+        throw new Error(`Logical ${key} must have an array value: ${value}`)
       }
-      if (key in semantic) {
-        return semantic[key](value)
+      return logical[key](...value.map($))
+    }
+    if (key === 'not') {
+      if (Array.isArray(value)) {
+        throw new Error(`Logical not must have non-array value: ${value}`)
       }
-      if (key in logical) {
-        return logical[key](value)
-      }
-      return logical.is(key, value)
-    }))
+      return logical.not($(value))
+    }
+    if (key in semantic) {
+      return semantic[key](value)
+    }
+    if (key in logical) {
+      return logical[key](value)
+    }
+    return logical.is(key, value)
+  }))
 }
 
 const EIDRQueryBuilder = {
