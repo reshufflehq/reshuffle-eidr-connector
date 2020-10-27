@@ -320,7 +320,7 @@ export class EIDRConnector extends BaseConnector {
       throw new EIDRError(
         'Unsupported type',
         500,
-        `Unsupported resolution type: ${type}`,
+        `Unsupported resolution type: id=${id} type=${type}`,
       )
     }
 
