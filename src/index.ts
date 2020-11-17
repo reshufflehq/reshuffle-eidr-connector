@@ -205,7 +205,7 @@ export class EIDRConnector extends BaseConnector {
       headers: {
         Authorization: this.authorization,
         'Content-Type': 'text/xml',
-        'EIDR-Version': '2.1',
+        'EIDR-Version': '2.6.0',
       },
     })
 
@@ -228,7 +228,7 @@ export class EIDRConnector extends BaseConnector {
       headers: {
         Authorization: this.authorization,
         'Content-Type': 'text/xml',
-        'EIDR-Version': '2.1',
+        'EIDR-Version': '2.6.0',
       },
       body: requestBody,
     })
