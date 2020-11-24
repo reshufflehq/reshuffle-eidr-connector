@@ -269,6 +269,7 @@ export class EIDRConnector extends BaseConnector {
     const res = obj.Response
 
     if (res.Status.Code !== '0') {
+      console.log('Query:', req)
       throw new EIDRError(
         `Error ${res.Status.Code} ${res.Status.Type}`,
         (res.Status.Code === '4' || res.Status.Code === '5') ? 403 : 500,
