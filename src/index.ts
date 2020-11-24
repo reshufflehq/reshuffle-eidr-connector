@@ -243,8 +243,7 @@ export class EIDRConnector extends BaseConnector {
     }
 
     const xml = await res.text()
-    const xmlOptions = { ...this.xmlOptions, ignoreAttrs: true }
-    return xml2js.parseStringPromise(xml, xmlOptions)
+    return xml2js.parseStringPromise(xml, this.xmlOptions)
   }
 
   // Actions ////////////////////////////////////////////////////////
