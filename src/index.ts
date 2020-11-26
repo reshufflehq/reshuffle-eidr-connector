@@ -7,6 +7,7 @@ type Obj = Record<string, any>
 type Options = Record<string, any>
 
 interface QueryOptions {
+  idOnly?: boolean
   pageNumber?: number
   pageSize?: number
   root?: string
@@ -265,7 +266,10 @@ export class EIDRConnector extends BaseConnector {
       )
     }
     const req = this.renderQueryRequest(expr, options)
-    const obj = await this.postRequest('query/', req)
+    const obj = await this.postRequest(
+      `query/${options.idOnly ? '?type=ID' : ''}`,
+      req,
+    )
     const res = obj.Response
 
     if (res.Status.Code !== '0') {
@@ -278,7 +282,7 @@ export class EIDRConnector extends BaseConnector {
     }
 
     if (res.QueryResults) {
-      const data = res.QueryResults.SimpleMetadata
+      const data = res.QueryResults[options.idOnly ? 'ID' : 'SimpleMetadata']
       const array = data ? (Array.isArray(data) ? data : [data]) : []
       return {
         totalMatches: Number(res.QueryResults.TotalMatches),
