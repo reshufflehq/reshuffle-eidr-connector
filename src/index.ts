@@ -2,6 +2,8 @@ import crypto from 'crypto'
 import xml2js from 'xml2js'
 import fetch from 'node-fetch'
 import { BaseConnector, Reshuffle } from 'reshuffle-base-connector'
+import { validateId } from './validate'
+import { buildJsonQuery } from './jsonQuery'
 
 type Obj = Record<string, any>
 type Options = Record<string, any>
@@ -17,111 +19,6 @@ class EIDRError extends Error {
   constructor(message: string, public status: number, public details: string) {
     super(`EIDRConnector: ${message}`)
   }
-}
-
-const logical: Obj = {
-
-  and: function and(...expressions: string[]) {
-    const many = 1 < expressions.length
-    return `${many ? '(' : ''}${expressions.join(' AND ')}${many ? ')' : ''}`
-  },
-
-  eq: function eq(field: string, value: string) {
-    return `(/FullMetadata/BaseObjectData/${field} "${value}")`
-  },
-
-  is: function is(field: string, value: string) {
-    return `(/FullMetadata/BaseObjectData/${field} IS "${value}")`
-  },
-
-  meq: function meq(field: string, value: string) {
-    return `(/FullMetadata/ExtraObjectMetadata/${field} "${value}")`
-  },
-
-  mexists: function mexists(field: string) {
-    return `(/FullMetadata/ExtraObjectMetadata/${field} EXISTS)`
-  },
-
-  not: function not(expression: string) {
-    return `(NOT ${expression})`
-  },
-
-  or: function or(...expressions: string[]) {
-    const many = 1 < expressions.length
-    return `${many ? '(' : ''}${expressions.join(' OR ')}${many ? ')' : ''}`
-  },
-}
-
-const semantic: Obj = {
-
-  date: function date(dt: string) {
-    return logical.eq('ReleaseDate', dt)
-  },
-
-  episodes: function episodes(id: string) {
-    return logical.meq('EpisodeInfo/Parent', id)
-  },
-
-  id: function id(_id: string) {
-    return logical.eq('ID', _id)
-  },
-
-  movie: function movie() {
-    return logical.is('ReferentType', 'Movie')
-  },
-
-  name: function name(nm: string) {
-    return logical.is('ResourceName', nm)
-  },
-
-  seasons: function seasons(id: string) {
-    return logical.and(
-      logical.meq('SeasonInfo/Parent', id),
-      semantic.type('Season'),
-    )
-  },
-
-  status: function status(st: string) {
-    return logical.eq('Status', st)
-  },
-
-  type: function type(ty: string) {
-    return logical.is('ReferentType', ty)
-  },
-
-  valid: function valid() {
-    return logical.eq('Status', 'valid')
-  },
-}
-
-function $(obj: Obj): string {
-  return logical.and(...Object.entries(obj).map(([key, value]) => {
-    if (key === 'and' || key === 'or') {
-      if (!Array.isArray(value)) {
-        throw new Error(`Logical ${key} must have an array value: ${value}`)
-      }
-      return logical[key](...value.map($))
-    }
-    if (key === 'not') {
-      if (Array.isArray(value)) {
-        throw new Error(`Logical not must have non-array value: ${value}`)
-      }
-      return logical.not($(value))
-    }
-    if (key in semantic) {
-      return semantic[key](value)
-    }
-    if (key in logical) {
-      return logical[key](value)
-    }
-    return logical.is(key, value)
-  }))
-}
-
-const EIDRQueryBuilder = {
-  ...logical,
-  ...semantic,
-  $,
 }
 
 export class EIDRConnector extends BaseConnector {
@@ -249,14 +146,10 @@ export class EIDRConnector extends BaseConnector {
 
   // Actions ////////////////////////////////////////////////////////
 
-  public getQueryBuilder() {
-    return EIDRQueryBuilder
-  }
-
   public async query(exprOrObj: string | Obj, options: QueryOptions = {}) {
     const expr =
       typeof exprOrObj === 'string' ? exprOrObj :
-      typeof exprOrObj === 'object' ? EIDRQueryBuilder.$(exprOrObj) :
+      typeof exprOrObj === 'object' ? buildJsonQuery(exprOrObj) :
       undefined
     if (expr === undefined) {
       throw new EIDRError(
@@ -298,6 +191,9 @@ export class EIDRConnector extends BaseConnector {
   }
 
   public async resolve(id: string, type = 'Full') {
+    if (!validateId(id)) {
+      throw new EIDRError('Invalid ID', 400, `Invalid EIDR ID: ${id}`)
+    }
     if (id.startsWith('10.5240')) {
       return this.resolveContentID(id, type)
     }

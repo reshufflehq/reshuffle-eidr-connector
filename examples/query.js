@@ -6,13 +6,16 @@ const { EIDRConnector } = require('reshuffle-eidr-connector')
   const eidr = new EIDRConnector(app)
 
   const name = 'Abominable'
+  const idOnly = false
 
   const { results } = await eidr.query({
-    name,
-    movie: true,
-    or: [ { ReleaseDate: 2019 }, { ReleaseDate: 2020 } ],
-    StructuralType: 'Performance',
-  })
+    and: [
+      { title: { exact: name } },
+      { reftype: { exact: 'Movie' } },
+      { struct: { exact: 'Performance' } },
+      { date: { date: '2019' } },
+    ],
+  }, { idOnly })
 
   for (const result of results) {
     console.log(result)

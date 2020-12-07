@@ -12,7 +12,7 @@ http.on({ method: 'GET', path: '/query' }, async (event) => {
   }
 
   try {
-    const { results } = await eidr.query({ name })
+    const { results } = await eidr.query({ title: { words: name } })
     return event.res.json(results)
 
   } catch (e) {

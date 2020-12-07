@@ -34,7 +34,7 @@ http.on({ method: 'GET', path: '/query' }, async (event) => {
   }
 
   try {
-    const { results } = await eidr.query({ name })
+    const { results } = await eidr.query({ title: { exact: name } })
     return event.res.json(results)
 
   } catch (e) {
@@ -54,8 +54,6 @@ app.start(8000)
 
 _Connector actions_:
 
-[getQueryBuilder](#getQueryBuilder) Get a query builder interface
-
 [query](#query) Search for media information
 
 [resolve](#resolve) Get information for one media resource
@@ -70,94 +68,6 @@ const eidrConnector = new EIDRConnector(app)
 ```
 
 #### Connector actions
-
-##### <a name="getQueryBuilder"></a>Get query builder action
-
-_Definition:_
-
-```
-=> queryBuilder: object
-```
-
-_Usage:_
-
-```js
-const Q = await eidrConnector.getQueryBuilder()
-await eidrConnector.query(
-  Q.and(
-    Q.is('ResourceName', 'abominable'),
-    Q.eq('ReferentType', 'Movie'),
-    Q.eq('Status', 'valid'),
-  )
-)
-```
-
-Build a query in the EIDR query language, for use by the [query](#query)
-action. The query builder is stateless and can be used to form multiple
-queries.
-
-The query language provides the following methods:
-
-**Logical methods:**
-
-* `and(...expressions)` logical and operand
-* `eq(field, value)` match an object data field to a specific value
-* `is(field, value)` exactly match an object data field to a specific value
-* `meq(field, value)` match a meta data field to a specific value
-* `mexists(field)` check if a meta data field exists
-* `or(...expressions)` logical or operand
-
-**Semantic methods:**
-
-* `date(dt)` match entries with the specified date
-* `id(id)` match ID
-* `episodes(id)` get the eposides for a specific season ID
-* `movie()` match movies
-* `name(name)` match entries with the specified resource name
-* `seasons(id)` get the seasons for a specific series ID
-* `status(st)` match entries with the specified status
-* `type(type)` match entries with the specified referent type
-* `valid()` match entries with valid status
-
-**Object query method:**
-
-The `$` method allows the caller to use a *query object* to describe the
-query. The properties of this object are names of semantic methods above
-and their values are the method's argument (any value can be used if the
-method requires no arguments).
-
-The results of the methods corresponding to the proprties are joined with a
-logical `and`. If the object is an array, then each element of the array is
-processed as described above, and the results are joined with a logical
-`or`.
-
-The special property `$` can be used to nest `or`ed arrays inside objects.
-
-For example, the query above can be written as
-
-```js
-Q.$({
-  name: 'abominable',
-  movie: true,
-  valid: true,
-})
-```
-
-Object based queries are useful, for example, for creating a JSON based
-intefrace, as shown in this example HTTP triggered script:
-
-```js
-async (req, res) => {
-  const Q = await eidrConnector.getQueryBuilder()
-  const query = Q.$(req.body)
-  const resources = await eidrConnector.query(query)
-
-  return res
-    .status(200)
-    .set({ 'Content-Type': 'application/json' })
-    .send(JSON.stringify(resources.results))
-}
-```
 
 ##### <a name="query"></a>Query action
 
@@ -192,14 +102,11 @@ or
 
 ```js
 const id = '10.5240/DF48-AB62-4486-C185-9E1B-4'
-const { results } = await eidrConnector.query({ id, valid: true })
+const { results } = await eidrConnector.query({ title: { exact: name } })
 ```
 
 Search the EIDR database for matches to the query. You can specify the query
-using EIDR query language directly (as in the first example above),
-use a query object or use the simplified query builder intefrace. See
-[getQueryBuilder](#getQueryBuilder) below on how to use the query builder and
-query objects.
+using EIDR XML query language or the EIDR Proxy JSON query language.
 
 The optional `options` object supports the following optional fields:
 
