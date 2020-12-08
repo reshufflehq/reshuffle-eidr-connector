@@ -133,14 +133,18 @@ function existsQuery(element: string) {
   return `(/FullMetadata/BaseObjectData/${textElements[element][0]} EXISTS)`
 }
 
-function isRootQuery() {
-  return NOT(OR([
+function isRootQuery(value :boolean) {
+  if (typeof value !== 'boolean') {
+    throw new Error(`isroot value must be boolean: ${value}`)
+  }
+  const notRootQuery = OR([
     '(/FullMetadata/ExtraObjectMetadata/SeasonInfo EXISTS)',
     '(/FullMetadata/ExtraObjectMetadata/ClipInfo EXISTS)',
     '(/FullMetadata/ExtraObjectMetadata/ManifestationInfo EXISTS)',
     '(/FullMetadata/ExtraObjectMetadata/EpisodeInfo EXISTS)',
     '(/FullMetadata/ExtraObjectMetadata/EditInfo EXISTS)',
-  ]))
+  ])
+  return value ? NOT(notRootQuery) : notRootQuery
 }
 
 function parentQuery(id: string) {
@@ -177,7 +181,7 @@ export function buildJsonQuery(obj: Obj) {
     return existsQuery(value)
   }
   if (element === 'isroot') {
-    return isRootQuery()
+    return isRootQuery(value)
   }
   if (element === 'parent') {
     return parentQuery(value)
