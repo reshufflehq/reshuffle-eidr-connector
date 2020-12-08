@@ -83,6 +83,33 @@ function textQuery(key: string, obj: Obj) {
   }
 }
 
+function idQuery(obj: Obj) {
+  const [op, list] = assertSingleProperty(obj)
+  if (typeof list !== 'string') {
+    throw new Error(`Invalid ID list: ${list}`)
+  }
+  const ids = list.split(' ').filter(s => 0 < s.length)
+  if (ids.length === 0) {
+    throw new Error(`Empty ID list: ${list}`)
+  }
+  for (const id of ids) {
+    if (!validateId(id)) {
+      throw new Error(`Invalid ID: ${id}`)
+    }
+  }
+  switch (op) {
+    case 'words':
+      return OR(ids.map(id => `/FullMetadata/BaseObjectData/ID ${id}`))
+    case 'exact':
+      if (ids.length !== 1) {
+        throw new Error(`Excat ID expect single ID, but found ${ids.length}`)
+      }
+      return `(/FullMetadata/BaseObjectData/ID ${ids[0]})`
+    default:
+      throw new Error(`Invalid ID query operation: ${op}`)
+  }
+}
+
 function dateQuery(obj: Obj) {
   const [op, date] = assertSingleProperty(obj)
   if (typeof date !== 'string' || date.trim().length === 0) {
@@ -170,6 +197,9 @@ export function buildJsonQuery(obj: Obj) {
   }
   if (element in textElements) {
     return textQuery(element, value)
+  }
+  if (element === 'id') {
+    return idQuery(value)
   }
   if (element === 'date') {
     return dateQuery(value)
