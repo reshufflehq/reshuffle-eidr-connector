@@ -5,6 +5,9 @@ import { BaseConnector, Reshuffle } from 'reshuffle-base-connector'
 import { validateId } from './validate'
 import { buildJsonQuery } from './jsonQuery'
 
+const eidrApiVersion = '2.6.0'
+const eidrConnectorVersion = require('../package.json').version
+
 type Obj = Record<string, any>
 type Options = Record<string, any>
 
@@ -103,7 +106,7 @@ export class EIDRConnector extends BaseConnector {
       headers: {
         Authorization: this.authorization,
         'Content-Type': 'text/xml',
-        'EIDR-Version': '2.6.0',
+        'EIDR-Version': eidrApiVersion,
       },
     })
 
@@ -126,7 +129,7 @@ export class EIDRConnector extends BaseConnector {
       headers: {
         Authorization: this.authorization,
         'Content-Type': 'text/xml',
-        'EIDR-Version': '2.6.0',
+        'EIDR-Version': eidrApiVersion,
       },
       body: requestBody,
     })
@@ -145,6 +148,13 @@ export class EIDRConnector extends BaseConnector {
   }
 
   // Actions ////////////////////////////////////////////////////////
+
+  public info() {
+    return {
+      eidrApiVersion,
+      eidrConnectorVersion,
+    }
+  }
 
   public async query(exprOrObj: string | Obj, options: QueryOptions = {}) {
     const expr =

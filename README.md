@@ -54,6 +54,8 @@ app.start(8000)
 
 _Connector actions_:
 
+[info](#info) Get connector information
+
 [query](#query) Search for media information
 
 [resolve](#resolve) Get information for one media resource
@@ -68,6 +70,25 @@ const eidrConnector = new EIDRConnector(app)
 ```
 
 #### Connector actions
+
+##### <a name="info"></a>Info action
+
+_Definition:_
+
+```
+() => {
+  eidrApiVersion: string,
+  eidrConnectorVersion: string,
+}
+```
+
+_Usage:_
+
+```js
+const info = await eidrConnector.info()
+```
+
+Get connector information.
 
 ##### <a name="query"></a>Query action
 
