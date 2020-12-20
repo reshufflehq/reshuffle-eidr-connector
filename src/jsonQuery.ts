@@ -26,7 +26,7 @@ function nary(op: string, expressions: string[]) {
   }
   const many = 1 < expressions.length
   return `${many ? '(' : ''}${
-    expressions.map(e => e.trim()).join(` ${op} `)
+    expressions.map((e) => e.trim()).join(` ${op} `)
   }${many ? ')' : ''}`
 }
 
@@ -55,7 +55,7 @@ const textElements: Record<string, string[]> = {
   aoid: ['AssociatedOrg@organizationID'],
   actor: ['Credits/Actor/DisplayName'],
   director: ['Credits/Director/DisplayName'],
-  contributor: ['Credits/Director/DisplayName','Credits/Actor/DisplayName'],
+  contributor: ['Credits/Director/DisplayName', 'Credits/Actor/DisplayName'],
   altid: ['AlternateID'],
   altidtype: ['AlternateID@type'],
   altiddomain: ['AlternateID@domain'],
@@ -66,20 +66,20 @@ function textQuery(key: string, obj: Obj) {
   if (typeof list !== 'string') {
     throw new Error(`Invalid text query word list: ${list}`)
   }
-  const words = list.split(' ').filter(s => 0 < s.length)
+  const words = list.split(' ').filter((s) => 0 < s.length)
   if (words.length === 0) {
     throw new Error(`Empty text query word list: ${list}`)
   }
-  const te = textElements[key].map(p => `/FullMetadata/BaseObjectData/${p}`)
+  const te = textElements[key].map((p) => `/FullMetadata/BaseObjectData/${p}`)
   switch (op) {
-    case 'words':
-      return OR(te.map(p => words.map(w => `(${p} ${w})`)).flat())
-    case 'contains':
-      return OR(te.map(p => `(${p} "${words.join(' ')}")`))
-    case 'exact':
-      return OR(te.map(p => `(${p} IS "${words.join(' ')}")`))
-    default:
-      throw new Error(`Invalid text query operation: ${op}`)
+  case 'words':
+    return OR(te.map((p) => words.map((w) => `(${p} ${w})`)).flat())
+  case 'contains':
+    return OR(te.map((p) => `(${p} "${words.join(' ')}")`))
+  case 'exact':
+    return OR(te.map((p) => `(${p} IS "${words.join(' ')}")`))
+  default:
+    throw new Error(`Invalid text query operation: ${op}`)
   }
 }
 
@@ -88,7 +88,7 @@ function idQuery(obj: Obj) {
   if (typeof list !== 'string') {
     throw new Error(`Invalid ID list: ${list}`)
   }
-  const ids = list.split(' ').filter(s => 0 < s.length)
+  const ids = list.split(' ').filter((s) => 0 < s.length)
   if (ids.length === 0) {
     throw new Error(`Empty ID list: ${list}`)
   }
@@ -98,15 +98,15 @@ function idQuery(obj: Obj) {
     }
   }
   switch (op) {
-    case 'words':
-      return OR(ids.map(id => `/FullMetadata/BaseObjectData/ID ${id}`))
-    case 'exact':
-      if (ids.length !== 1) {
-        throw new Error(`Excat ID expect single ID, but found ${ids.length}`)
-      }
-      return `(/FullMetadata/BaseObjectData/ID ${ids[0]})`
-    default:
-      throw new Error(`Invalid ID query operation: ${op}`)
+  case 'words':
+    return OR(ids.map((id) => `/FullMetadata/BaseObjectData/ID ${id}`))
+  case 'exact':
+    if (ids.length !== 1) {
+      throw new Error(`Excat ID expect single ID, but found ${ids.length}`)
+    }
+    return `(/FullMetadata/BaseObjectData/ID ${ids[0]})`
+  default:
+    throw new Error(`Invalid ID query operation: ${op}`)
   }
 }
 
@@ -116,14 +116,14 @@ function dateQuery(obj: Obj) {
     throw new Error(`Invalid date: ${date}`)
   }
   switch (op) {
-    case 'date':
-      return `(/FullMetadata/BaseObjectData/ReleaseDate ${date})`
-    case 'before':
-      return `(/FullMetadata/BaseObjectData/ReleaseDate <= ${date})`
-    case 'after':
-      return `(/FullMetadata/BaseObjectData/ReleaseDate >= ${date})`
-    default:
-      throw new Error(`Invalid date query operation: ${op}`)
+  case 'date':
+    return `(/FullMetadata/BaseObjectData/ReleaseDate ${date})`
+  case 'before':
+    return `(/FullMetadata/BaseObjectData/ReleaseDate <= ${date})`
+  case 'after':
+    return `(/FullMetadata/BaseObjectData/ReleaseDate >= ${date})`
+  default:
+    throw new Error(`Invalid date query operation: ${op}`)
   }
 }
 
@@ -133,23 +133,23 @@ function lengthQuery(obj: Obj) {
     throw new Error(`Invalid length: ${length}`)
   }
   switch (op) {
-    case 'length':
-      return `(/FullMetadata/BaseObjectData/ApproximateLength ${length})`
-    case 'maxlength':
-      return `(/FullMetadata/BaseObjectData/ApproximateLength <= ${length})`
-    case 'minlength':
-      return `(/FullMetadata/BaseObjectData/ApproximateLength >= ${length})`
-    default:
-      throw new Error(`Invalid length query operation: ${op}`)
+  case 'length':
+    return `(/FullMetadata/BaseObjectData/ApproximateLength ${length})`
+  case 'maxlength':
+    return `(/FullMetadata/BaseObjectData/ApproximateLength <= ${length})`
+  case 'minlength':
+    return `(/FullMetadata/BaseObjectData/ApproximateLength >= ${length})`
+  default:
+    throw new Error(`Invalid length query operation: ${op}`)
   }
 }
 
 function existsQuery(element: string) {
   if (element === 'date') {
-    return `(/FullMetadata/BaseObjectData/ReleaseDate EXISTS)`
+    return '(/FullMetadata/BaseObjectData/ReleaseDate EXISTS)'
   }
   if (element === 'length') {
-    return `(/FullMetadata/BaseObjectData/ApproximateLength EXISTS)`
+    return '(/FullMetadata/BaseObjectData/ApproximateLength EXISTS)'
   }
   if (!(element in textElements)) {
     throw new Error(`Invalid element: ${element}`)
@@ -230,16 +230,30 @@ export function buildJsonQuery(obj: Obj) {
 // Error: Object must have one single property
 
 // { title: { words: 'star wars' } }
-// ((/FullMetadata/BaseObjectData/ResourceName star) OR (/FullMetadata/BaseObjectData/ResourceName wars))
+// (
+//   (/FullMetadata/BaseObjectData/ResourceName star) OR
+//   (/FullMetadata/BaseObjectData/ResourceName wars)
+// )
 
 // { alltitles: { words: 'star wars' } }
-// ((/FullMetadata/BaseObjectData/ResourceName star) OR (/FullMetadata/BaseObjectData/ResourceName wars) OR (/FullMetadata/BaseObjectData/AlternateResourceName star) OR (/FullMetadata/BaseObjectData/AlternateResourceName wars))
+// (
+//   (/FullMetadata/BaseObjectData/ResourceName star) OR
+//   (/FullMetadata/BaseObjectData/ResourceName wars) OR
+//   (/FullMetadata/BaseObjectData/AlternateResourceName star) OR
+//   (/FullMetadata/BaseObjectData/AlternateResourceName wars)
+// )
 
 // { and: [{ title: { contains: 'star wars' } }, { coo: { exact: 'us' } }] }
-// ((/FullMetadata/BaseObjectData/ResourceName "star wars") AND (/FullMetadata/BaseObjectData/CountryOfOrigin IS "us"))
+// (
+//   (/FullMetadata/BaseObjectData/ResourceName "star wars") AND
+//   (/FullMetadata/BaseObjectData/CountryOfOrigin IS "us")
+// )
 
 // { or: [{ title: { contains: 'star wars' } }, { coo: { exact: 'us' } }] }
-// ((/FullMetadata/BaseObjectData/ResourceName "star wars") OR (/FullMetadata/BaseObjectData/CountryOfOrigin IS "us"))
+// (
+//   (/FullMetadata/BaseObjectData/ResourceName "star wars") OR
+//   (/FullMetadata/BaseObjectData/CountryOfOrigin IS "us")
+// )
 
 // { not: { title: { contains: 'star wars' } } }
 // (NOT (/FullMetadata/BaseObjectData/ResourceName "star wars"))
@@ -266,7 +280,30 @@ export function buildJsonQuery(obj: Obj) {
 // (/FullMetadata/BaseObjectData/Credits/Actor/DisplayName EXISTS)
 
 // { isroot: true }
-// (NOT ((/FullMetadata/ExtraObjectMetadata/SeasonInfo EXISTS) OR (/FullMetadata/ExtraObjectMetadata/ClipInfo EXISTS) OR (/FullMetadata/ExtraObjectMetadata/ManifestationInfo EXISTS) OR (/FullMetadata/ExtraObjectMetadata/EpisodeInfo EXISTS) OR (/FullMetadata/ExtraObjectMetadata/EditInfo EXISTS)))
+// (NOT (
+//   (/FullMetadata/ExtraObjectMetadata/SeasonInfo EXISTS) OR
+//   (/FullMetadata/ExtraObjectMetadata/ClipInfo EXISTS) OR
+//   (/FullMetadata/ExtraObjectMetadata/ManifestationInfo EXISTS) OR
+//   (/FullMetadata/ExtraObjectMetadata/EpisodeInfo EXISTS) OR
+//   (/FullMetadata/ExtraObjectMetadata/EditInfo EXISTS))
+// )
 
 // { parent: '10.5240/75C0-4663-9D6D-C864-1D9B-I' }
-// ((/FullMetadata/ExtraObjectMetadata/SeasonInfo/Parent 10.5240/75C0-4663-9D6D-C864-1D9B-I) OR (/FullMetadata/ExtraObjectMetadata/ClipInfo/Parent 10.5240/75C0-4663-9D6D-C864-1D9B-I) OR (/FullMetadata/ExtraObjectMetadata/ManifestationInfo/Parent 10.5240/75C0-4663-9D6D-C864-1D9B-I) OR (/FullMetadata/ExtraObjectMetadata/EpisodeInfo/Parent 10.5240/75C0-4663-9D6D-C864-1D9B-I) OR (/FullMetadata/ExtraObjectMetadata/EditInfo/Parent 10.5240/75C0-4663-9D6D-C864-1D9B-I))
+// (
+//   (
+//     /FullMetadata/ExtraObjectMetadata/SeasonInfo/Parent
+//     10.5240/75C0-4663-9D6D-C864-1D9B-I
+//   ) OR (
+//     /FullMetadata/ExtraObjectMetadata/ClipInfo/Parent
+//     10.5240/75C0-4663-9D6D-C864-1D9B-I
+//   ) OR (
+//     /FullMetadata/ExtraObjectMetadata/ManifestationInfo/Parent
+//     10.5240/75C0-4663-9D6D-C864-1D9B-I
+//   ) OR (
+//     /FullMetadata/ExtraObjectMetadata/EpisodeInfo/Parent
+//     10.5240/75C0-4663-9D6D-C864-1D9B-I
+//   ) OR (
+//     /FullMetadata/ExtraObjectMetadata/EditInfo/Parent
+//     10.5240/75C0-4663-9D6D-C864-1D9B-I
+//   )
+// )
