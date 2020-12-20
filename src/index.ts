@@ -19,51 +19,58 @@ interface QueryOptions {
 }
 
 class EIDRError extends Error {
-  constructor(message: string, public status: number, public details: string) {
+  constructor(
+    message: string,
+    public status: number,
+    public details: string = message,
+  ) {
     super(`EIDRConnector: ${message}`)
   }
 }
 
+interface Credentials {
+  userId: string
+  partyId: string
+  password: string
+  domain?: string
+}
+
+class Authorization {
+  public readonly endpoint: string
+  public readonly headers: Obj = {}
+  public readonly registered: boolean = false
+
+  constructor(credentials: Credentials) {
+    function validate(tag: string, value: string): string {
+      if (typeof value !== 'string' || value.trim().length === 0) {
+        throw new EIDRError(`Invalid ${tag}`, 500)
+      }
+      return value.trim()
+    }
+
+    if (credentials.userId) {
+      const userId = validate('userId', credentials.userId)
+      const partyId = validate('partyId', credentials.partyId)
+      const password = validate('password', credentials.password)
+      const shadow = crypto.createHash('md5').update(password).digest('base64')
+      this.headers = { Authorization: `Eidr ${userId}:${partyId}:${shadow}` }
+      this.registered = true
+    }
+
+    const domain = credentials.domain !== undefined ?
+      validate('domain', credentials.domain) :
+      'resolve.eidr.org'
+    this.endpoint = `https://${domain}/EIDR/`
+  }
+}
+
 export class EIDRConnector extends BaseConnector {
-  private endpoint: string
-  private authorization: string
+  private authorization: Authorization
   private xmlOptions: Obj
 
   constructor(app: Reshuffle, options: Options = {}, id?: string) {
     super(app, options, id)
-
-    let userId: string
-    let partyId: string
-    let shadow: string
-    let domain: string
-
-    function validate(opt: string): string {
-      if (typeof options[opt] !== 'string' || options[opt].length === 0) {
-        throw new EIDRError(
-          'Invalid ${opt}',
-          500,
-          `Invalid ${opt}: ${options[opt]}`,
-        )
-      }
-      return options[opt]
-    }
-
-    if (options.userId) {
-      userId = validate('userId')
-      partyId = validate('partyId')
-      const password = validate('password')
-      shadow = crypto.createHash('md5').update(password).digest('base64')
-      domain = validate('domain')
-    } else {
-      userId = '10.5238/reshuffle-api'
-      partyId = '10.5237/717F-CB6A'
-      shadow = 'IRRrGhXH+DrDYBs82EBzzQ=='
-      domain = 'resolve.eidr.org'
-    }
-
-    this.endpoint = `https://${domain}/EIDR/`
-    this.authorization = `Eidr ${userId}:${partyId}:${shadow}`
-
+    this.authorization = new Authorization(options as Credentials)
     this.xmlOptions = {
       trim: true,
       explicitArray: false,
@@ -100,38 +107,20 @@ export class EIDRConnector extends BaseConnector {
   //   `)
   // }
 
-  private async getRequest(pth: string) {
-    const res = await fetch(this.endpoint + pth, {
-      method: 'GET',
+  private async request(
+    method: 'GET' | 'POST',
+    path: string,
+    auth: Authorization = this.authorization,
+    body?: string,
+  ) {
+    const res = await fetch(auth.endpoint + path, {
+      method,
       headers: {
-        Authorization: this.authorization,
+        ...auth.headers,
         'Content-Type': 'text/xml',
         'EIDR-Version': eidrApiVersion,
       },
-    })
-
-    if (res.status !== 200) {
-      throw new EIDRError(
-        'API error',
-        res.status,
-        `HTTP error accessing EIDR registry API: ${
-          res.status} ${res.statusText}`,
-      )
-    }
-
-    const xml = await res.text()
-    return xml2js.parseStringPromise(xml, this.xmlOptions)
-  }
-
-  private async postRequest(pth: string, requestBody: string) {
-    const res = await fetch(this.endpoint + pth, {
-      method: 'POST',
-      headers: {
-        Authorization: this.authorization,
-        'Content-Type': 'text/xml',
-        'EIDR-Version': eidrApiVersion,
-      },
-      body: requestBody,
+      ...(body ? { body } : {}),
     })
 
     if (res.status !== 200) {
@@ -156,7 +145,22 @@ export class EIDRConnector extends BaseConnector {
     }
   }
 
-  public async query(exprOrObj: string | Obj, options: QueryOptions = {}) {
+  public async query(
+    exprOrObj: string | Obj,
+    options: QueryOptions = {},
+    credentials?: Credentials,
+  ) {
+    const auth: Authorization = credentials ?
+      new Authorization(credentials) :
+      this.authorization
+    if (!auth.registered) {
+      throw new EIDRError(
+        'Unregistered',
+        401,
+        'Query requires registered user credentials'
+      )
+    }
+
     const expr =
       typeof exprOrObj === 'string' ? exprOrObj :
       typeof exprOrObj === 'object' ? buildJsonQuery(exprOrObj) :
@@ -169,8 +173,10 @@ export class EIDRConnector extends BaseConnector {
       )
     }
     const req = this.renderQueryRequest(expr, options)
-    const obj = await this.postRequest(
+    const obj = await this.request(
+      'POST',
       `query/${options.idOnly ? '?type=ID' : ''}`,
+      auth,
       req,
     )
     const res = obj.Response
@@ -235,7 +241,7 @@ export class EIDRConnector extends BaseConnector {
     }
 
     const pth = `object/${encodeURIComponent(id)}?type=${type}`
-    const res = await this.getRequest(pth)
+    const res = await this.request('GET', pth)
 
     if (res.Response &&
         res.Response.Status &&
@@ -303,7 +309,7 @@ export class EIDRConnector extends BaseConnector {
 
     const prefix = id.startsWith('10.5237') ? 'party' : 'service'
     const pth = `${prefix}/resolve/${encodeURIComponent(id)}?type=${type}`
-    const res = await this.getRequest(pth)
+    const res = await this.request('GET', pth)
 
     if (res.Response &&
         res.Response.Status &&
@@ -333,8 +339,9 @@ export class EIDRConnector extends BaseConnector {
   public async simpleQuery(
     exprOrObj: string | Obj,
     compareFunction?: (a: Obj, b: Obj) => number,
+    credentials?: Credentials,
   ) {
-    const { results } = await this.query(exprOrObj)
+    const { results } = await this.query(exprOrObj, {}, credentials)
     const defaultCompareFunction = ((a: any, b: any) => (
       (new Date(b.ReleaseDate)).getTime() -
       (new Date(a.ReleaseDate)).getTime()

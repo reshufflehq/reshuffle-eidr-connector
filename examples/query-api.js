@@ -2,7 +2,11 @@ const { Reshuffle, HttpConnector } = require('reshuffle')
 const { EIDRConnector } = require('reshuffle-eidr-connector')
 
 const app = new Reshuffle()
-const eidr = new EIDRConnector(app)
+const eidr = new EIDRConnector(app, {
+  userId: process.env.EIDR_USERID,
+  partyId: process.env.EIDR_PARTYID,
+  password: process.env.EIDR_PASSWORD,
+})
 const http = new HttpConnector(app)
 
 http.on({ method: 'GET', path: '/query' }, async (event) => {
