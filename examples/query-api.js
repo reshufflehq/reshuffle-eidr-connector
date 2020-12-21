@@ -2,11 +2,7 @@ const { Reshuffle, HttpConnector } = require('reshuffle')
 const { EIDRConnector } = require('reshuffle-eidr-connector')
 
 const app = new Reshuffle()
-const eidr = new EIDRConnector(app, {
-  userId: process.env.EIDR_USERID,
-  partyId: process.env.EIDR_PARTYID,
-  password: process.env.EIDR_PASSWORD,
-})
+const eidr = new EIDRConnector(app)
 const http = new HttpConnector(app)
 
 http.on({ method: 'GET', path: '/query' }, async (event) => {
@@ -15,8 +11,16 @@ http.on({ method: 'GET', path: '/query' }, async (event) => {
     return event.res.status(400).send('Missing name')
   }
 
+  // Must authorize individual queries as we didn't set
+  // credentials upon connector initialization
+  const authorization = event.req.header('Authorization')
+
   try {
-    const { results } = await eidr.query({ title: { words: name } })
+    const { results } = await eidr.query(
+      { title: { words: name } },
+      {}, // No options
+      authorization,
+    )
     return event.res.json(results)
 
   } catch (e) {

@@ -29,12 +29,15 @@ class EIDRError extends Error {
   }
 }
 
-interface Credentials {
+interface CredentialsInterface {
   userId: string
   partyId: string
-  password: string
+  password?: string
+  shadow?: string
   domain?: string
 }
+
+type Credentials = string | CredentialsInterface
 
 class Authorization {
   public readonly endpoint: string
@@ -42,25 +45,48 @@ class Authorization {
   public readonly registered: boolean = false
 
   constructor(credentials: Credentials) {
+
     function validate(tag: string, value: string): string {
       if (typeof value !== 'string' || value.trim().length === 0) {
-        throw new EIDRError(`Invalid ${tag}`, 500)
+        throw new EIDRError(`Invalid ${tag}`, 401)
       }
       return value.trim()
     }
 
-    if (credentials.userId) {
+    if (typeof credentials === 'string') {
+      if (!/^Eidr [^\s]+:[^\s]+:[^\s]+$/.test(credentials)) {
+        throw new EIDRError('Invalid credentials string', 401)
+      }
+      const [userId, partyId, shadow] = credentials.substr(5).split(':')
+      this.headers = { Authorization: `Eidr ${userId}:${partyId}:${shadow}` }
+      this.registered = true
+
+    } else if (credentials.userId) {
       const userId = validate('userId', credentials.userId)
       const partyId = validate('partyId', credentials.partyId)
-      const password = validate('password', credentials.password)
-      const shadow = crypto.createHash('md5').update(password).digest('base64')
+
+      let shadow
+      if (credentials.password) {
+        const password = validate('password', credentials.password)
+        shadow = crypto.createHash('md5').update(password).digest('base64')
+      } else if (credentials.shadow) {
+        shadow = validate('shadow', credentials.shadow)
+      } else {
+        throw new EIDRError(
+          'Missing password',
+          401,
+          'Password of shadow must be part of credentials'
+        )
+      }
+
       this.headers = { Authorization: `Eidr ${userId}:${partyId}:${shadow}` }
       this.registered = true
     }
 
-    const domain = credentials.domain !== undefined ?
-      validate('domain', credentials.domain) :
-      'resolve.eidr.org'
+    const domain =
+      typeof credentials === 'string' || credentials.domain === undefined ?
+      'resolve.eidr.org' :
+      validate('domain', credentials.domain)
     this.endpoint = `https://${domain}/EIDR/`
   }
 }
