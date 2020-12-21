@@ -24,7 +24,11 @@ const { Reshuffle, HttpConnector } = require('reshuffle')
 const { EIDRConnector } = require('reshuffle-eidr-connector')
 
 const app = new Reshuffle()
-const eidr = new EIDRConnector(app)
+const eidr = new EIDRConnector(app, {
+  userId: process.env.EIDR_USERID,
+  partyId: process.env.EIDR_PARTYID,
+  password: process.env.EIDR_PASSWORD,
+})
 const http = new HttpConnector(app)
 
 http.on({ method: 'GET', path: '/query' }, async (event) => {
@@ -69,6 +73,40 @@ const app = new Reshuffle()
 const eidrConnector = new EIDRConnector(app)
 ```
 
+This default initialization will allow access to all public available EIDR
+functions, including ID resolution. Some functions, including query and
+ID registration, require EIDR membership credentials. Credentials can
+be passed as an object in the form:
+
+```ts
+{
+  userId: string
+  partyId: string
+  password?: string
+  shaddow?: string
+  domain?: string
+}
+```
+
+The `userId` and `partyId` are mandatory and provided by EIDR to its members.
+Either `password` or `shaddow` (the base64 encoded MD5 hash of password) must
+also be provided. The `domain` can used left out in most cases unless there
+is a specific reason to use a mirror service.
+
+Credentials can also be passed as a string with the following format:
+`Eidr <userId>:<partyId>:<shaddow>`.
+
+Credentials can be passed as a second argument to the connector's constructor:
+
+```js
+const credentials = { ... }
+const eidrConnector = new EIDRConnector(app, credentials)
+```
+
+or as the last optional argument to priviledged actions like [query](#query).
+This method is usedful when building an service or API to allow third patries
+to perform queries or other priviledged operations against the EIDR registry.
+
 #### Connector actions
 
 ##### <a name="info"></a>Info action
@@ -98,6 +136,7 @@ _Definition:_
 (
   query: object | string,
   options?: object,
+  credentials?: string | object,
 ) => {
   totalMatches: number,
   results: object[],
@@ -135,6 +174,9 @@ The optional `options` object supports the following optional fields:
 * `pageSize?: number` - Results page size (default is 25)
 * `root?: string` - EIDR ID for rooted queries
 
+See the [Configuration](#configuration) section above for more details about
+access credentials.
+
 ##### <a name="resolve"></a>Resolve action
 
 _Definition:_
@@ -165,8 +207,9 @@ _Definition:_
 
 ```
 (
-    exprOrObj: string | object,
-    compareFunction?: (a: object, b: object) => number,
+  exprOrObj: string | object,
+  compareFunction?: (a: object, b: object) => number,
+  credentials?: string | object,
 ) => object[]
 ```
 
@@ -190,6 +233,9 @@ array directly to the caller. The results are automatically sorted by
 descending order of release date. You can control the sort order by specifying
 a `compareFunction` that behaves like the one used by
 [Array.sort](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort).
+
+See the [Configuration](#configuration) section above for more details about
+access credentials.
 
 ## Learn more
 
