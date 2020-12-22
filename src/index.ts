@@ -83,8 +83,7 @@ class Authorization {
       this.registered = true
     }
 
-    const domain =
-      typeof credentials === 'string' || credentials.domain === undefined ?
+    const domain = typeof credentials === 'string' || !credentials.domain ?
       'resolve.eidr.org' :
       validate('domain', credentials.domain)
     this.endpoint = `https://${domain}/EIDR/`
