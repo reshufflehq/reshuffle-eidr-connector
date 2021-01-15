@@ -276,7 +276,7 @@ export class EIDRConnector extends BaseConnector {
       throw new EIDRError(
         `Error ${res.Response.Status.Code} ${res.Response.Status.Type}`,
         500,
-        res.Response.Status.Type,
+        `Registry error: id=${id} type=${res.Response.Status.Type}`,
       )
     }
 
@@ -329,7 +329,7 @@ export class EIDRConnector extends BaseConnector {
       throw new EIDRError(
         'Unsupported type',
         500,
-        `Unsupported resolution type: ${type}`,
+        `Unsupported resolution: id=${id} type=${type}`,
       )
     }
 
@@ -343,7 +343,7 @@ export class EIDRConnector extends BaseConnector {
       throw new EIDRError(
         `Error ${res.Response.Status.Code} ${res.Response.Status.Type}`,
         500,
-        res.Response.Status.Type,
+        `Registry error: id=${id} type=${res.Response.Status.Type}`,
       )
     }
 
