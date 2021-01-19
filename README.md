@@ -2,13 +2,13 @@
 
 [Code](https://github.com/reshufflehq/reshuffle-eidr-connector) |
 [npm](https://www.npmjs.com/package/reshuffle-eidr-connector) |
-[Code sample](https://github.com/reshufflehq/reshuffle-eidr-connector/examples)
+[Code sample](https://github.com/reshufflehq/reshuffle-eidr-connector/tree/master/examples)
 
 `npm install reshuffle-eidr-connector`
 
 ### Reshuffle EIDR Connector
 
-This package contains a [Reshuffle](https://dev.reshuffle.com)
+This package contains a [Reshuffle](https://github.com/reshufflehq/reshuffle)
 connector to the Entertainment Identifier Registry (EIDR) service
 at [eidr.org](https://eidr.org/).
 
