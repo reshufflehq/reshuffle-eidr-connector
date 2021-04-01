@@ -187,13 +187,13 @@ function parentQuery(id: string) {
   ])
 }
 
-export function buildJsonQuery(obj: Obj) {
+export function buildJsonQuery(obj: Obj): string {
   const [element, value] = assertSingleProperty(obj)
   if (element === 'and' || element === 'or') {
     return nary(element, value.map(buildJsonQuery))
   }
   if (element === 'not') {
-    return NOT(value)
+    return NOT(buildJsonQuery(value))
   }
   if (element in textElements) {
     return textQuery(element, value)
