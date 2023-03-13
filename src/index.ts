@@ -4,6 +4,7 @@ import fetch from 'node-fetch'
 import { BaseConnector, Reshuffle } from 'reshuffle-base-connector'
 import { validateId } from './validate'
 import { buildJsonQuery } from './jsonQuery'
+import { parseJsonWithValue } from './jsonPopulateValue'
 
 const eidrApiVersion = '2.6.0'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -153,13 +154,13 @@ export class EIDRConnector extends BaseConnector {
       throw new EIDRError(
         'API error',
         res.status,
-        `HTTP error accessing EIDR registry API: ${
-          res.status} ${res.statusText}`,
+        `HTTP error accessing EIDR registry API: ${res.status} ${res.statusText}`,
       )
     }
 
     const xml = await res.text()
-    return xml2js.parseStringPromise(xml, this.xmlOptions)
+    const json = xml2js.parseStringPromise(xml, this.xmlOptions)
+    return parseJsonWithValue(json)
   }
 
   // Actions ////////////////////////////////////////////////////////
@@ -189,8 +190,8 @@ export class EIDRConnector extends BaseConnector {
 
     const expr =
       typeof exprOrObj === 'string' ? exprOrObj :
-      typeof exprOrObj === 'object' ? buildJsonQuery(exprOrObj) :
-      undefined
+        typeof exprOrObj === 'object' ? buildJsonQuery(exprOrObj) :
+          undefined
     if (expr === undefined) {
       throw new EIDRError(
         'Invalid query',
@@ -270,8 +271,8 @@ export class EIDRConnector extends BaseConnector {
     const res = await this.request('GET', pth)
 
     if (res.Response &&
-        res.Response.Status &&
-        res.Response.Status.Code !== '0') {
+      res.Response.Status &&
+      res.Response.Status.Code !== '0') {
 
       throw new EIDRError(
         `Error ${res.Response.Status.Code} ${res.Response.Status.Type}`,
@@ -338,8 +339,8 @@ export class EIDRConnector extends BaseConnector {
     const res = await this.request('GET', pth)
 
     if (res.Response &&
-        res.Response.Status &&
-        res.Response.Status.Code !== '0') {
+      res.Response.Status &&
+      res.Response.Status.Code !== '0') {
       throw new EIDRError(
         `Error ${res.Response.Status.Code} ${res.Response.Status.Type}`,
         500,
