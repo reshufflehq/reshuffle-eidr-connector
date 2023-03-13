@@ -6,7 +6,7 @@
 // 'MetaDataObject.*' is NOT ok
 const jsonFormatWithValueRules = [
   'ExtraObjectMetadata.EpisodeInfo.SequenceInfo.DistributionNumber',
-//   '*.SequenceInfo.DistributionNumber',   // Example with wildcard
+  //   '*.SequenceInfo.DistributionNumber',   // Example with wildcard
 ]
 
 // Recursion to convert primitive values in specified path of the JSON to an object
@@ -58,6 +58,9 @@ function parseJsonWithOneRule(jsonToParse: any, fields: string[]) {
 }
 
 export function parseJsonWithValue(json: any) {
+  if (!json || typeof json !== 'object') {
+    return json;
+  }
   jsonFormatWithValueRules.forEach((rule) =>
     parseJsonWithOneRule(json, rule.split('.')))
 }

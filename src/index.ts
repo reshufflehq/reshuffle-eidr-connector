@@ -159,8 +159,7 @@ export class EIDRConnector extends BaseConnector {
     }
 
     const xml = await res.text()
-    const json = xml2js.parseStringPromise(xml, this.xmlOptions)
-    return parseJsonWithValue(json)
+    return xml2js.parseStringPromise(xml, this.xmlOptions)
   }
 
   // Actions ////////////////////////////////////////////////////////
@@ -222,7 +221,7 @@ export class EIDRConnector extends BaseConnector {
       const array = data ? (Array.isArray(data) ? data : [data]) : []
       return {
         totalMatches: Number(res.QueryResults.TotalMatches),
-        results: array,
+        results: parseJsonWithValue(array),
       }
     }
 
@@ -290,10 +289,10 @@ export class EIDRConnector extends BaseConnector {
           `Unrecognized response resolving: id=${id} type=${type}`,
         )
       }
-      return {
+      return parseJsonWithValue({
         ...res[attr].BaseObjectData,
         ExtraObjectMetadata: res[attr].ExtraObjectMetadata,
-      }
+      })
     }
 
     if (type === 'AlternateIDs' || type === 'LinkedAlternateIDs') {
@@ -305,10 +304,10 @@ export class EIDRConnector extends BaseConnector {
           `Unrecognized response resolving: id=${id} type=${type}`,
         )
       }
-      return {
+      return parseJsonWithValue({
         ID: res[type].ID,
         [prop]: res[type][prop] || [],
-      }
+      })
     }
 
     // type === 'Simple'|| type === 'Provenance' || type === 'DOIKernel'
@@ -322,7 +321,7 @@ export class EIDRConnector extends BaseConnector {
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-shadow
     const { $, ...response } = res[attr]
-    return response
+    return parseJsonWithValue(response)
   }
 
   private async resolveOtherID(id: string, type = 'Full') {
@@ -360,7 +359,7 @@ export class EIDRConnector extends BaseConnector {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-shadow
     const { $, ...response } = payload
-    return response
+    return parseJsonWithValue(response)
   }
 
   public async simpleQuery(
