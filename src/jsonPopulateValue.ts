@@ -6,6 +6,8 @@
 // 'MetaDataObject.*' is NOT ok
 const jsonFormatWithValueRules = [
   'ExtraObjectMetadata.EpisodeInfo.SequenceInfo.DistributionNumber',
+  'ExtraObjectMetadata.EpisodeInfo.SequenceInfo.HouseSequence',
+  'ExtraObjectMetadata.CompilationInfo.CompilationClass'
   //   '*.SequenceInfo.DistributionNumber',   // Example with wildcard
 ]
 
