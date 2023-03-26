@@ -4,6 +4,7 @@ import fetch from 'node-fetch'
 import { BaseConnector, Reshuffle } from 'reshuffle-base-connector'
 import { validateId } from './validate'
 import { buildJsonQuery } from './jsonQuery'
+import { parseJsonWithValue } from './jsonPopulateValue'
 
 const eidrApiVersion = '2.6.0'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -153,8 +154,7 @@ export class EIDRConnector extends BaseConnector {
       throw new EIDRError(
         'API error',
         res.status,
-        `HTTP error accessing EIDR registry API: ${
-          res.status} ${res.statusText}`,
+        `HTTP error accessing EIDR registry API: ${res.status} ${res.statusText}`,
       )
     }
 
@@ -189,8 +189,8 @@ export class EIDRConnector extends BaseConnector {
 
     const expr =
       typeof exprOrObj === 'string' ? exprOrObj :
-      typeof exprOrObj === 'object' ? buildJsonQuery(exprOrObj) :
-      undefined
+        typeof exprOrObj === 'object' ? buildJsonQuery(exprOrObj) :
+          undefined
     if (expr === undefined) {
       throw new EIDRError(
         'Invalid query',
@@ -221,7 +221,7 @@ export class EIDRConnector extends BaseConnector {
       const array = data ? (Array.isArray(data) ? data : [data]) : []
       return {
         totalMatches: Number(res.QueryResults.TotalMatches),
-        results: array,
+        results: parseJsonWithValue(array),
       }
     }
 
@@ -270,8 +270,8 @@ export class EIDRConnector extends BaseConnector {
     const res = await this.request('GET', pth)
 
     if (res.Response &&
-        res.Response.Status &&
-        res.Response.Status.Code !== '0') {
+      res.Response.Status &&
+      res.Response.Status.Code !== '0') {
 
       throw new EIDRError(
         `Error ${res.Response.Status.Code} ${res.Response.Status.Type}`,
@@ -289,10 +289,10 @@ export class EIDRConnector extends BaseConnector {
           `Unrecognized response resolving: id=${id} type=${type}`,
         )
       }
-      return {
+      return parseJsonWithValue({
         ...res[attr].BaseObjectData,
         ExtraObjectMetadata: res[attr].ExtraObjectMetadata,
-      }
+      })
     }
 
     if (type === 'AlternateIDs' || type === 'LinkedAlternateIDs') {
@@ -304,10 +304,10 @@ export class EIDRConnector extends BaseConnector {
           `Unrecognized response resolving: id=${id} type=${type}`,
         )
       }
-      return {
+      return parseJsonWithValue({
         ID: res[type].ID,
         [prop]: res[type][prop] || [],
-      }
+      })
     }
 
     // type === 'Simple'|| type === 'Provenance' || type === 'DOIKernel'
@@ -321,7 +321,7 @@ export class EIDRConnector extends BaseConnector {
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-shadow
     const { $, ...response } = res[attr]
-    return response
+    return parseJsonWithValue(response)
   }
 
   private async resolveOtherID(id: string, type = 'Full') {
@@ -338,8 +338,8 @@ export class EIDRConnector extends BaseConnector {
     const res = await this.request('GET', pth)
 
     if (res.Response &&
-        res.Response.Status &&
-        res.Response.Status.Code !== '0') {
+      res.Response.Status &&
+      res.Response.Status.Code !== '0') {
       throw new EIDRError(
         `Error ${res.Response.Status.Code} ${res.Response.Status.Type}`,
         500,
@@ -359,7 +359,7 @@ export class EIDRConnector extends BaseConnector {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-shadow
     const { $, ...response } = payload
-    return response
+    return parseJsonWithValue(response)
   }
 
   public async simpleQuery(
