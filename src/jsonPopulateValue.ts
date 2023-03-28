@@ -7,11 +7,12 @@
 const jsonFormatWithValueRules = [
   'ExtraObjectMetadata.EpisodeInfo.SequenceInfo.DistributionNumber',
   'ExtraObjectMetadata.EpisodeInfo.SequenceInfo.HouseSequence',
-  'ExtraObjectMetadata.CompilationInfo.CompilationClass'
+  'ExtraObjectMetadata.CompilationInfo.CompilationClass',
   //   '*.SequenceInfo.DistributionNumber',   // Example with wildcard
 ]
 
-// Recursion to convert primitive values in specified path of the JSON to an object
+// Recursion to convert primitive values in specified path
+// of the JSON to an object
 function parseJsonWithOneRule(jsonToParse: any, fields: string[]) {
   if (!fields?.length || !jsonToParse) {
     return
@@ -29,7 +30,8 @@ function parseJsonWithOneRule(jsonToParse: any, fields: string[]) {
           }
         }
       })
-    } else if (typeof jsonToParse[currentField] !== 'object' && jsonToParse[currentField]) {
+    } else if (typeof jsonToParse[currentField] !== 'object' &&
+      jsonToParse[currentField]) {
       jsonToParse[currentField] = {
         value: jsonToParse[currentField],
       }
@@ -52,7 +54,8 @@ function parseJsonWithOneRule(jsonToParse: any, fields: string[]) {
 
   if (jsonToParse[currentField]) {
     if (Array.isArray(jsonToParse[currentField])) {
-      jsonToParse[currentField].forEach((arrItem) => parseJsonWithOneRule(arrItem, subFields))
+      jsonToParse[currentField].forEach((arrItem: any) =>
+        parseJsonWithOneRule(arrItem, subFields))
     } else {
       parseJsonWithOneRule(jsonToParse[currentField], subFields)
     }
@@ -61,8 +64,9 @@ function parseJsonWithOneRule(jsonToParse: any, fields: string[]) {
 
 export function parseJsonWithValue(json: any) {
   if (!json || typeof json !== 'object') {
-    return json;
+    return json
   }
   jsonFormatWithValueRules.forEach((rule) =>
     parseJsonWithOneRule(json, rule.split('.')))
+  return json
 }
