@@ -247,13 +247,6 @@ export class EIDRConnector extends BaseConnector {
     }
 
     return res.SimpleMetadata ? parseJsonWithValue(res.SimpleMetadata) : null
-
-    // const array = data ? (Array.isArray(data) ? data : [data]) : []
-    // return {
-    //   totalMatches: Number(res.QueryResults.TotalMatches),
-    //   results: parseJsonWithValue(array),
-    // }
-
   }
 
   public async query(
