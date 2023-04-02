@@ -117,14 +117,6 @@ export class EIDRConnector extends BaseConnector {
   }
 
   private renderOperationRequest(operation: string) {
-    console.log('renderOperation:', `
-    <Request xmlns="http://www.eidr.org/schema">
-      <Operation>
-        ${operation}
-      </Operation>
-    </Request>
-  `)
-
     return `
       <Request xmlns="http://www.eidr.org/schema">
         <Operation>
@@ -135,14 +127,6 @@ export class EIDRConnector extends BaseConnector {
   }
 
   private renderQueryRequest(query: string, opts: QueryOptions) {
-    console.log('renderQueryRequest', `
-    <Query>
-      ${opts.root ? `<ID>${opts.root}</ID>` : ''}
-      <Expression><![CDATA[${query}]]></Expression>
-      <PageNumber>${opts.pageNumber || 1}</PageNumber>
-      <PageSize>${opts.pageSize || 25}</PageSize>
-    </Query>
-  `)
     return this.renderOperationRequest(`
       <Query>
         ${opts.root ? `<ID>${opts.root}</ID>` : ''}
@@ -177,7 +161,6 @@ export class EIDRConnector extends BaseConnector {
     auth: Authorization = this.authorization,
     body?: string,
   ) {
-    console.log('request:', auth.endpoint + path, method, body)
     const res = await fetch(auth.endpoint + path, {
       method,
       headers: {
@@ -256,7 +239,6 @@ export class EIDRConnector extends BaseConnector {
     const res = obj.Response
 
     if (res.Status.Code !== '0') {
-      console.log('query: error', res)
       throw new EIDRError(
         `Error ${res.Status.Code} ${res.Status.Type}`,
         (res.Status.Code === '4' || res.Status.Code === '5') ? 403 : 500,
@@ -264,7 +246,6 @@ export class EIDRConnector extends BaseConnector {
       )
     }
 
-    console.log('graph traversal', res)
     return res.SimpleMetadata ? parseJsonWithValue(res.SimpleMetadata) : null
 
     // const array = data ? (Array.isArray(data) ? data : [data]) : []
@@ -296,7 +277,6 @@ export class EIDRConnector extends BaseConnector {
         typeof exprOrObj === 'object' ? buildJsonQuery(exprOrObj) :
           undefined
 
-    console.log('query: expr =', expr)
     if (expr === undefined) {
       throw new EIDRError(
         'Invalid query',
@@ -312,10 +292,8 @@ export class EIDRConnector extends BaseConnector {
       req,
     )
     const res = obj.Response
-    console.log('query: ', res)
 
     if (res.Status.Code !== '0') {
-      console.log('query: error', res)
       throw new EIDRError(
         `Error ${res.Status.Code} ${res.Status.Type}`,
         (res.Status.Code === '4' || res.Status.Code === '5') ? 403 : 500,
