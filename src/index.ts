@@ -13,6 +13,18 @@ const eidrConnectorVersion = require('../package.json').version
 type Obj = Record<string, any>
 type Options = Record<string, any>
 
+enum GraphTraversalTypes {
+  FindAncestors = 'FindAncestors',
+  FindDescendants = 'FindDescendants',
+  GetDependents = 'GetDependents',
+  GetSeriesAncestry = 'GetSeriesAncestry',
+  GetLightweightRelationships = 'GetLightweightRelationships',
+  GetRemotestAncestor = 'GetRemotestAncestor',
+  GetLeafDescendants = 'GetLeafDescendants',
+  GetParent = 'GetParent',
+  GetChildren = 'GetChildren'
+}
+
 interface QueryOptions {
   idOnly?: boolean
   pageNumber?: number
@@ -125,6 +137,15 @@ export class EIDRConnector extends BaseConnector {
     `)
   }
 
+  private renderGraphTraversalRequest(id: string,
+    graphRequest: GraphTraversalTypes) {
+    return this.renderOperationRequest(`
+      <${graphRequest}>
+        <ID>${id}</ID>
+      </${graphRequest}>
+    `)
+  }
+
   // May be needed in the future
   // private renderRelationshipsRequest(id: string) {
   //   return this.renderOperationRequest(`
@@ -171,6 +192,63 @@ export class EIDRConnector extends BaseConnector {
     }
   }
 
+  public async graphTraversal(
+    id: string,
+    graphRequest: GraphTraversalTypes,
+    credentials?: Credentials
+  ) {
+    const auth: Authorization = credentials ?
+      new Authorization(credentials) :
+      this.authorization
+    if (!auth.registered) {
+      throw new EIDRError(
+        'Unregistered',
+        401,
+        'Query requires registered user credentials'
+      )
+    }
+
+    if (!graphRequest || Object.values(GraphTraversalTypes)
+      .indexOf(graphRequest) === -1) {
+      throw new EIDRError(
+        'Invalid graph traversal request',
+        500,
+        `A valid graph request type must be provided: 
+        FindAncestors, FindDescendants, GetDependents,
+        GetSeriesAncestry, GetLightweightRelationships,
+        GetRemotestAncestor, GetLeafDescendants, GetParent,
+        GetChildren`,
+      )
+    }
+
+    if (!id) {
+      throw new EIDRError(
+        'Invalid graph traversal request',
+        500,
+        'EIDR ID must be provided',
+      )
+    }
+
+    const req = this.renderGraphTraversalRequest(id, graphRequest);
+    const obj = await this.request(
+      'POST',
+      'object/graph',
+      auth,
+      req,
+    )
+    const res = obj.Response
+
+    if (res.Status.Code !== '0') {
+      throw new EIDRError(
+        `Error ${res.Status.Code} ${res.Status.Type}`,
+        (res.Status.Code === '4' || res.Status.Code === '5') ? 403 : 500,
+        res.Status.Details,
+      )
+    }
+
+    return res.SimpleMetadata ? parseJsonWithValue(res.SimpleMetadata) : null
+  }
+
   public async query(
     exprOrObj: string | Obj,
     options: QueryOptions = {},
@@ -191,6 +269,7 @@ export class EIDRConnector extends BaseConnector {
       typeof exprOrObj === 'string' ? exprOrObj :
         typeof exprOrObj === 'object' ? buildJsonQuery(exprOrObj) :
           undefined
+
     if (expr === undefined) {
       throw new EIDRError(
         'Invalid query',
@@ -208,7 +287,6 @@ export class EIDRConnector extends BaseConnector {
     const res = obj.Response
 
     if (res.Status.Code !== '0') {
-      console.log('Query:', req)
       throw new EIDRError(
         `Error ${res.Status.Code} ${res.Status.Type}`,
         (res.Status.Code === '4' || res.Status.Code === '5') ? 403 : 500,
