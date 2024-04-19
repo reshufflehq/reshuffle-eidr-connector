@@ -6,7 +6,7 @@ import { validateId } from './validate'
 import { buildJsonQuery } from './jsonQuery'
 import { parseJsonWithValue } from './jsonPopulateValue'
 
-const eidrApiVersion = '2.6.0'
+const eidrApiVersion = '2.7.0'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const eidrConnectorVersion = require('../package.json').version
 
