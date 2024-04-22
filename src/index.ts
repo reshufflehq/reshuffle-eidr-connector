@@ -6,6 +6,7 @@ import { validateId } from './validate'
 import { buildJsonQuery } from './jsonQuery'
 import { parseJsonWithValue } from './jsonPopulateValue'
 
+const availableApiVersions = ['2.6.0', '2.7.0']
 const eidrApiVersion = '2.7.0'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const eidrConnectorVersion = require('../package.json').version
@@ -107,7 +108,9 @@ export class EIDRConnector extends BaseConnector {
   private authorization: Authorization
   private xmlOptions: Obj
 
-  constructor(app: Reshuffle, options: Options = {}, id?: string) {
+  constructor(app: Reshuffle, options: Options = {
+    
+  }, id?: string) {
     super(app, options, id)
     this.authorization = new Authorization(options as Credentials)
     this.xmlOptions = {
@@ -160,13 +163,17 @@ export class EIDRConnector extends BaseConnector {
     path: string,
     auth: Authorization = this.authorization,
     body?: string,
+    customEidrVersion?: string
   ) {
+
+    console.log('auth.endpoint', auth.endpoint, customEidrVersion);
+
     const res = await fetch(auth.endpoint + path, {
       method,
       headers: {
         ...auth.headers,
         'Content-Type': 'text/xml',
-        'EIDR-Version': eidrApiVersion,
+        'EIDR-Version': customEidrVersion ||eidrApiVersion,
       },
       ...(body ? { body } : {}),
     })
@@ -189,13 +196,15 @@ export class EIDRConnector extends BaseConnector {
     return {
       eidrApiVersion,
       eidrConnectorVersion,
+      availableApiVersions
     }
   }
 
   public async graphTraversal(
     id: string,
     graphRequest: GraphTraversalTypes,
-    credentials?: Credentials
+    credentials?: Credentials,
+    apiVersion?: string
   ) {
     const auth: Authorization = credentials ?
       new Authorization(credentials) :
@@ -235,6 +244,7 @@ export class EIDRConnector extends BaseConnector {
       'object/graph',
       auth,
       req,
+      apiVersion
     )
     const res = obj.Response
 
@@ -253,6 +263,7 @@ export class EIDRConnector extends BaseConnector {
     exprOrObj: string | Obj,
     options: QueryOptions = {},
     credentials?: Credentials,
+    apiVersion?: string
   ) {
     const auth: Authorization = credentials ?
       new Authorization(credentials) :
@@ -283,6 +294,7 @@ export class EIDRConnector extends BaseConnector {
       `query/${options.idOnly ? '?type=ID' : ''}`,
       auth,
       req,
+      apiVersion
     )
     const res = obj.Response
 
@@ -310,15 +322,15 @@ export class EIDRConnector extends BaseConnector {
     )
   }
 
-  public async resolve(id: string, type = 'Full') {
+  public async resolve(id: string, type = 'Full', apiVersion?: string) {
     if (!validateId(id)) {
       throw new EIDRError('Invalid ID', 400, `Invalid EIDR ID: ${id}`)
     }
     if (id.startsWith('10.5240')) {
-      return this.resolveContentID(id, type)
+      return this.resolveContentID(id, type, apiVersion)
     }
     if (id.startsWith('10.5239') || id.startsWith('10.5237')) {
-      return this.resolveOtherID(id, type)
+      return this.resolveOtherID(id, type, apiVersion)
     }
     throw new EIDRError(
       'Unsupported type',
@@ -327,7 +339,7 @@ export class EIDRConnector extends BaseConnector {
     )
   }
 
-  private async resolveContentID(id: string, type = 'Full') {
+  private async resolveContentID(id: string, type = 'Full', apiVersion?: string) {
     if (
       type !== 'AlternateIDs' &&
       type !== 'DOIKernel' &&
@@ -345,7 +357,7 @@ export class EIDRConnector extends BaseConnector {
     }
 
     const pth = `object/${encodeURIComponent(id)}?type=${type}`
-    const res = await this.request('GET', pth)
+    const res = await this.request('GET', pth, undefined, undefined, apiVersion)
 
     if (res.Response &&
       res.Response.Status &&
@@ -402,7 +414,7 @@ export class EIDRConnector extends BaseConnector {
     return parseJsonWithValue(response)
   }
 
-  private async resolveOtherID(id: string, type = 'Full') {
+  private async resolveOtherID(id: string, type = 'Full', apiVersion?: string) {
     if (type !== 'Full' && type !== 'DOIKernel') {
       throw new EIDRError(
         'Unsupported type',
@@ -413,7 +425,7 @@ export class EIDRConnector extends BaseConnector {
 
     const prefix = id.startsWith('10.5237') ? 'party' : 'service'
     const pth = `${prefix}/resolve/${encodeURIComponent(id)}?type=${type}`
-    const res = await this.request('GET', pth)
+    const res = await this.request('GET', pth, undefined, undefined, apiVersion)
 
     if (res.Response &&
       res.Response.Status &&
