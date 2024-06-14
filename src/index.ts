@@ -166,8 +166,6 @@ export class EIDRConnector extends BaseConnector {
     customEidrVersion?: string
   ) {
 
-    console.log('auth.endpoint', auth.endpoint, customEidrVersion);
-
     const res = await fetch(auth.endpoint + path, {
       method,
       headers: {
