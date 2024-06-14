@@ -109,7 +109,7 @@ export class EIDRConnector extends BaseConnector {
   private xmlOptions: Obj
 
   constructor(app: Reshuffle, options: Options = {
-    
+
   }, id?: string) {
     super(app, options, id)
     this.authorization = new Authorization(options as Credentials)
@@ -166,12 +166,14 @@ export class EIDRConnector extends BaseConnector {
     customEidrVersion?: string
   ) {
 
+    console.log('connector 169', auth)
+
     const res = await fetch(auth.endpoint + path, {
       method,
       headers: {
         ...auth.headers,
         'Content-Type': 'text/xml',
-        'EIDR-Version': customEidrVersion ||eidrApiVersion,
+        'EIDR-Version': customEidrVersion || eidrApiVersion,
       },
       ...(body ? { body } : {}),
     })
@@ -261,7 +263,7 @@ export class EIDRConnector extends BaseConnector {
     exprOrObj: string | Obj,
     options: QueryOptions = {},
     credentials?: Credentials,
-    apiVersion?: string
+    apiVersion?: string,
   ) {
     const auth: Authorization = credentials ?
       new Authorization(credentials) :
@@ -320,15 +322,19 @@ export class EIDRConnector extends BaseConnector {
     )
   }
 
-  public async resolve(id: string, type = 'Full', apiVersion?: string) {
+  public async resolve(id: string,
+    type = 'Full',
+    credentials?: Credentials,
+    apiVersion?: string) {
+
     if (!validateId(id)) {
       throw new EIDRError('Invalid ID', 400, `Invalid EIDR ID: ${id}`)
     }
     if (id.startsWith('10.5240')) {
-      return this.resolveContentID(id, type, apiVersion)
+      return this.resolveContentID(id, type, credentials, apiVersion)
     }
     if (id.startsWith('10.5239') || id.startsWith('10.5237')) {
-      return this.resolveOtherID(id, type, apiVersion)
+      return this.resolveOtherID(id, type, credentials, apiVersion)
     }
     throw new EIDRError(
       'Unsupported type',
@@ -337,7 +343,15 @@ export class EIDRConnector extends BaseConnector {
     )
   }
 
-  private async resolveContentID(id: string, type = 'Full', apiVersion?: string) {
+  private async resolveContentID(
+    id: string, type = 'Full',
+    credentials?: Credentials,
+    apiVersion?: string) {
+
+    const auth: Authorization | undefined = credentials ?
+      new Authorization(credentials) :
+      undefined
+
     if (
       type !== 'AlternateIDs' &&
       type !== 'DOIKernel' &&
@@ -355,7 +369,7 @@ export class EIDRConnector extends BaseConnector {
     }
 
     const pth = `object/${encodeURIComponent(id)}?type=${type}`
-    const res = await this.request('GET', pth, undefined, undefined, apiVersion)
+    const res = await this.request('GET', pth, auth, undefined, apiVersion)
 
     if (res.Response &&
       res.Response.Status &&
@@ -412,7 +426,11 @@ export class EIDRConnector extends BaseConnector {
     return parseJsonWithValue(response)
   }
 
-  private async resolveOtherID(id: string, type = 'Full', apiVersion?: string) {
+  private async resolveOtherID(
+    id: string,
+    type = 'Full',
+    credentials?: Credentials,
+    apiVersion?: string) {
     if (type !== 'Full' && type !== 'DOIKernel') {
       throw new EIDRError(
         'Unsupported type',
@@ -421,9 +439,13 @@ export class EIDRConnector extends BaseConnector {
       )
     }
 
+    const auth: Authorization | undefined = credentials ?
+      new Authorization(credentials) :
+      undefined
+
     const prefix = id.startsWith('10.5237') ? 'party' : 'service'
     const pth = `${prefix}/resolve/${encodeURIComponent(id)}?type=${type}`
-    const res = await this.request('GET', pth, undefined, undefined, apiVersion)
+    const res = await this.request('GET', pth, auth, undefined, apiVersion)
 
     if (res.Response &&
       res.Response.Status &&
