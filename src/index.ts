@@ -194,7 +194,7 @@ export class EIDRConnector extends BaseConnector {
     return {
       eidrApiVersion,
       eidrConnectorVersion,
-      availableApiVersions
+      availableApiVersions,
     }
   }
 
