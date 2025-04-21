@@ -368,7 +368,6 @@ export class EIDRConnector extends BaseConnector {
 
     const pth = `object/${encodeURIComponent(id)}?type=${type}`
     const res = await this.request('GET', pth, auth, undefined, apiVersion)
-
     if (res.Response &&
       res.Response.Status &&
       res.Response.Status.Code !== '0') {
